@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>專注小森林</title>
+<script>
+/* 在畫面繪製前先套用主題，避免閃一下白畫面 */
+(function(){var t=null;try{t=localStorage.getItem("focusForest.theme")}catch(e){}
+if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";
+document.documentElement.setAttribute("data-theme",t)})();
+</script>
+<style>
+:root{color-scheme:light;--bg:#dfe7d3;--ink:#1f3326;--soil:#6b4a33;--sky:#b5dbe6;--sun:#f2b632;--moon:#f2b632;--card:#f6f8ef;--mute:#5d7160;--bad:#b4472f;--surface:#ffffff;--line:#c5d0b8;--track:#e3eadb;--hover:#2f5a3d}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111c16;--ink:#e4eddc;--soil:#4a3424;--sky:#1b2b4a;--sun:#e9b94a;--moon:#f3efd2;--card:#1d2c23;--mute:#9db2a2;--bad:#e8806a;--surface:#2a3d32;--line:#3a5043;--track:#34483c;--hover:#a8d5b5}
+*{box-sizing:border-box}
+input{color:var(--ink);background:var(--surface)}
+body,.panel,.stage{transition:background-color .3s,color .3s}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.6}
+main{max-width:880px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.9rem;margin:0 0 4px;letter-spacing:.04em}
+.sub{color:var(--mute);margin:0 0 20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border-radius:18px;padding:20px;border:2px solid var(--ink)}
+.stage{background:var(--sky);border-radius:12px;height:230px;position:relative;overflow:hidden;border:2px solid var(--ink)}
+.stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46px;background:var(--soil)}
+.sun{position:absolute;top:14px;right:18px;width:34px;height:34px;border-radius:50%;background:var(--moon)}
+#plant{position:absolute;left:50%;bottom:36px;transform:translateX(-50%) scale(var(--s,.5));transform-origin:bottom center;font-size:96px;line-height:1;transition:transform .8s ease}
+#time{font-size:3.4rem;font-weight:700;text-align:center;margin:14px 0 2px;font-variant-numeric:tabular-nums}
+#msg{text-align:center;color:var(--mute);min-height:1.6em;margin:0 0 12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+button{font:inherit;cursor:pointer;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:8px 16px;border-radius:999px}
+button:hover:not(:disabled){background:var(--sun);color:#1f3326}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button.on{background:var(--ink);color:var(--bg)}
+button.go{background:var(--ink);color:var(--bg);font-weight:700;padding:10px 28px}
+button.go:hover:not(:disabled){background:var(--hover)}
+button:disabled{opacity:.4;cursor:not-allowed}
+input[type=text]{font:inherit;width:100%;padding:8px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--surface)}
+label{display:block;font-weight:600;margin-bottom:4px}
+.goal{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.goal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.goal-head input{width:72px;padding:4px 8px;border:2px solid var(--ink);border-radius:8px;font:inherit}
+.bar{height:16px;background:var(--track);border:2px solid var(--ink);border-radius:999px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;width:0;background:var(--sun);transition:width .6s ease}
+.bar.done i{background:#4f9a62}
+#goalTxt{font-size:.9rem;color:var(--mute);margin:0}
+.stats{display:flex;gap:10px;margin-bottom:14px}
+.stat{flex:1;text-align:center;background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:8px 4px}
+.stat b{display:block;font-size:1.5rem}
+.stat span{font-size:.85rem;color:var(--mute)}
+#forest{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;min-height:60px}
+.tree{font-size:30px;text-align:center;background:var(--surface);border-radius:10px;border:1.5px solid var(--line);cursor:help}
+.empty{color:var(--mute);grid-column:1/-1}
+#log{list-style:none;padding:0;margin:10px 0 0;font-size:.92rem;max-height:150px;overflow:auto}
+#log li{padding:4px 0;border-bottom:1px dashed var(--line)}
+.link{border:none;background:none;text-decoration:underline;color:var(--mute);padding:0}
+.link:hover:not(:disabled){background:none;color:var(--bad)}
+@media(prefers-reduced-motion:reduce){#plant{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><div><h1>專注小森林</h1>
+<p class="sub">種下一顆種子，專心到它長大。中途離開，它就會枯掉。</p></div>
+<button id="theme" aria-pressed="false">🌙 深色模式</button></div>
+
+<div class="grid">
+  <section class="panel" aria-label="計時器">
+    <div class="stage"><div class="sun"></div><div id="plant" aria-hidden="true">🌱</div></div>
+    <div id="time" role="timer" aria-live="off">25:00</div>
+    <p id="msg">選好時間，開始種樹。</p>
+
+    <div class="row" id="presets">
+      <button data-m="15">15 分</button>
+      <button data-m="25" class="on">25 分</button>
+      <button data-m="45">45 分</button>
+      <button data-m="custom">自訂</button>
+    </div>
+    <div class="row" id="customRow" hidden>
+      <input id="customMin" type="number" min="1" max="180" value="30" style="width:90px;padding:8px;border:2px solid var(--ink);border-radius:10px;font:inherit"> 分鐘
+    </div>
+
+    <p id="preview" style="text-align:center;margin:0 0 12px;font-weight:600"></p>
+    <label for="task">這次要專心做什麼？</label>
+    <input type="text" id="task" maxlength="30" placeholder="例如：寫程式作業">
+    <div class="row" style="margin-top:14px">
+      <button class="go" id="start">開始專注</button>
+      <button id="pause" disabled>暫停</button>
+    </div>
+    <div class="row">
+      <button class="link" id="giveup" disabled>放棄這棵樹</button>
+      <button class="link" id="sound" aria-pressed="true">🔔 音效：開</button>
+      <button class="link" id="testSound">試聽</button>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="我的森林">
+    <div class="goal">
+      <div class="goal-head">
+        <b>今天的專注目標</b>
+        <span><input type="number" id="goalIn" min="10" max="720" step="5" aria-label="每日目標分鐘數"> 分鐘</span>
+      </div>
+      <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="barFill"></i></div>
+      <p id="goalTxt"></p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="sTrees">0</b><span>成長的樹</span></div>
+      <div class="stat"><b id="sMin">0</b><span>專注分鐘</span></div>
+      <div class="stat"><b id="sDead">0</b><span>枯掉的樹</span></div>
+    </div>
+    <div id="forest"></div>
+    <p style="font-size:.85rem;color:var(--mute);margin:10px 0 0">樹種：🌿 幼苗 &lt;15 分｜🌳 橡樹 15 分｜🌲 松樹 25 分｜🌸 櫻花樹 45 分｜🍎 果樹 90 分以上</p>
+    <ul id="log"></ul>
+    <div class="row" style="margin-top:12px"><button class="link" id="reset">清空森林</button></div>
+  </section>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const KEY="focusForest.v1";
+const SPECIES=[ // 依專注分鐘數決定樹種，越久越稀有
+  {min:90,icon:"🍎",name:"果樹",rare:"稀有"},
+  {min:45,icon:"🌸",name:"櫻花樹",rare:"珍貴"},
+  {min:25,icon:"🌲",name:"松樹",rare:"一般"},
+  {min:15,icon:"🌳",name:"橡樹",rare:"一般"},
+  {min:0,icon:"🌿",name:"幼苗",rare:"普通"}
+];
+const speciesOf=m=>SPECIES.find(s=>m>=s.min);
+function updatePreview(){const s=speciesOf(minutes);$("preview").textContent=`完成後會長出：${s.icon} ${s.name}（${s.rare}）`}
+let minutes=25,total=0,left=0,timer=null,running=false,paused=false,data=load();
+
+/* ---------- 音效（Web Audio，不需外部檔案） ---------- */
+let audioCtx=null,soundOn=true;
+try{soundOn=localStorage.getItem("focusForest.sound")!=="off"}catch(e){}
+function getCtx(){ // 必須在使用者點擊後建立／恢復
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended")audioCtx.resume();
+  }catch(e){audioCtx=null}
+  return audioCtx;
+}
+function note(freq,start,dur,type="sine",vol=.25){
+  const c=audioCtx,o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.value=freq;
+  const t=c.currentTime+start;
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol,t+.02);
+  g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  o.connect(g);g.connect(c.destination);
+  o.start(t);o.stop(t+dur+.05);
+}
+function playSuccess(){ // 上行和弦 C-E-G-C，像小鈴鐺
+  if(!soundOn||!getCtx())return;
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>note(f,i*.16,.9));
+  note(1046.5,.64,1.4,"triangle",.12);
+}
+function playFail(){ // 下行兩音
+  if(!soundOn||!getCtx())return;
+  note(392,0,.5,"triangle",.2);note(293.66,.25,.8,"triangle",.2);
+}
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{list:[]}}catch(e){return{list:[]}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+
+function stage(p){ // p = 0..1 進度
+  const el=$("plant");
+  el.style.setProperty("--s",(0.5+p*0.9).toFixed(2));
+  el.textContent=p<.34?"🌱":p<1?"🌿":"🌳";
+}
+
+/* ---------- 深色模式 ---------- */
+function syncTheme(){
+  const dark=document.documentElement.getAttribute("data-theme")==="dark";
+  $("theme").textContent=dark?"☀️ 淺色模式":"🌙 深色模式";
+  $("theme").setAttribute("aria-pressed",dark);
+}
+$("theme").addEventListener("click",()=>{
+  const next=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-theme",next);
+  try{localStorage.setItem("focusForest.theme",next)}catch(e){}
+  syncTheme();
+});
+
+/* ---------- 每日目標 ---------- */
+function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function goalMin(){return data.goal||120}
+function todayMin(){return data.list.filter(t=>t.ok&&t.day===todayKey()).reduce((a,t)=>a+t.min,0)}
+function renderGoal(){
+  const g=goalMin(),m=todayMin(),pct=Math.min(100,Math.round(m/g*100));
+  if(document.activeElement!==$("goalIn"))$("goalIn").value=g;
+  $("barFill").style.width=pct+"%";
+  $("bar").classList.toggle("done",m>=g);
+  $("bar").setAttribute("aria-valuenow",pct);
+  $("goalTxt").textContent=m>=g
+    ?`今天已專注 ${m} 分鐘，目標達成！`
+    :`今天已專注 ${m} / ${g} 分鐘，還差 ${g-m} 分鐘。`;
+}
+$("goalIn").addEventListener("change",()=>{
+  let v=parseInt($("goalIn").value)||120;
+  data.goal=Math.min(720,Math.max(10,v));save();renderGoal();
+});
+
+function render(){
+  renderGoal();
+  const ok=data.list.filter(t=>t.ok),dead=data.list.filter(t=>!t.ok);
+  $("sTrees").textContent=ok.length;
+  $("sMin").textContent=ok.reduce((a,t)=>a+t.min,0);
+  $("sDead").textContent=dead.length;
+  const f=$("forest");f.innerHTML="";
+  if(!data.list.length){f.innerHTML='<p class="empty">森林還是空的。完成一次專注，就會長出第一棵樹。</p>'}
+  data.list.forEach(t=>{
+    const d=document.createElement("div");d.className="tree";
+    d.textContent=t.ok?t.icon:"🥀";
+    d.title=`${t.ok?(t.name||"樹"):"枯樹"}｜${t.task||"專注"}｜${t.min} 分鐘｜${t.date}${t.ok?"":"（中途放棄）"}`;
+    f.appendChild(d);
+  });
+  const log=$("log");log.innerHTML="";
+  data.list.slice(-6).reverse().forEach(t=>{
+    const li=document.createElement("li");
+    li.textContent=`${t.ok?"✅":"❌"} ${t.date} ${t.task||"專注"}（${t.min} 分）`;
+    log.appendChild(li);
+  });
+}
+
+function setUI(state){
+  $("start").disabled=state!=="idle";
+  $("pause").disabled=state==="idle";
+  $("giveup").disabled=state==="idle";
+  $("task").disabled=state!=="idle";
+  document.querySelectorAll("#presets button").forEach(b=>b.disabled=state!=="idle");
+  $("customMin").disabled=state!=="idle";
+  $("pause").textContent=state==="paused"?"繼續":"暫停";
+}
+
+function tick(){
+  left--;
+  $("time").textContent=fmt(left);
+  document.title=fmt(left)+" 專注小森林";
+  stage(1-left/total);
+  if(left<=0)finish(true);
+}
+
+function finish(ok){
+  clearInterval(timer);running=false;paused=false;
+  const rec={ok,min:Math.round(total/60),task:$("task").value.trim(),date:new Date().toLocaleDateString("zh-TW",{month:"numeric",day:"numeric"})};
+  const sp=speciesOf(rec.min);rec.icon=sp.icon;rec.name=sp.name;
+  rec.day=todayKey();
+  const before=todayMin();
+  data.list.push(rec);save();
+  const reached=ok&&before<goalMin()&&todayMin()>=goalMin();
+  if(ok){$("plant").textContent=rec.icon;
+    $("msg").textContent=reached?"今天的專注目標達成了！森林又長大了一圈。":`完成了！長出一棵${sp.name}，已種進你的森林。`;
+    playSuccess();if(reached)setTimeout(playSuccess,1500)}
+  else{playFail();$("plant").textContent="🥀";$("plant").style.setProperty("--s",1);$("msg").textContent="這棵樹枯掉了。下一次再試試看。"}
+  $("time").textContent=fmt(minutes*60);
+  document.title="專注小森林";
+  setUI("idle");render();
+}
+
+$("presets").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b||b.disabled)return;
+  document.querySelectorAll("#presets button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  if(b.dataset.m==="custom"){$("customRow").hidden=false;minutes=clamp($("customMin").value)}
+  else{$("customRow").hidden=true;minutes=+b.dataset.m}
+  $("time").textContent=fmt(minutes*60);updatePreview();
+});
+function clamp(v){v=parseInt(v)||25;return Math.min(180,Math.max(1,v))}
+$("customMin").addEventListener("input",()=>{minutes=clamp($("customMin").value);$("time").textContent=fmt(minutes*60);updatePreview()});
+
+function syncSound(){
+  $("sound").textContent=soundOn?"🔔 音效：開":"🔕 音效：關";
+  $("sound").setAttribute("aria-pressed",soundOn);
+}
+$("sound").addEventListener("click",()=>{
+  soundOn=!soundOn;syncSound();
+  try{localStorage.setItem("focusForest.sound",soundOn?"on":"off")}catch(e){}
+});
+$("testSound").addEventListener("click",playSuccess);
+
+$("start").addEventListener("click",()=>{
+  getCtx(); // 在點擊當下解鎖音訊，倒數結束時才能自動播放
+  total=left=minutes*60;running=true;paused=false;
+  stage(0);$("msg").textContent="專心中⋯ 樹正在長大。";
+  setUI("running");timer=setInterval(tick,1000);
+});
+$("pause").addEventListener("click",()=>{
+  if(!running)return;
+  if(paused){paused=false;timer=setInterval(tick,1000);$("msg").textContent="繼續專心。";setUI("running")}
+  else{paused=true;clearInterval(timer);$("msg").textContent="已暫停，樹先等你一下。";setUI("paused")}
+});
+$("giveup").addEventListener("click",()=>{if(running&&confirm("放棄的話，這棵樹會枯掉。確定要放棄嗎？"))finish(false)});
+$("reset").addEventListener("click",()=>{if(confirm("要清空整座森林和所有紀錄嗎？"))
+  {data={list:[]};save();render()}});
+
+window.addEventListener("beforeunload",e=>{if(running){e.preventDefault();e.returnValue=""}});
+$("time").textContent=fmt(minutes*60);stage(0);setUI("idle");render();syncSound();updatePreview();syncTheme();
+</script>
+</body>
+</html>
