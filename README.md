@@ -44,3 +44,6 @@ HTML + CSS + 原生 JavaScript，單一 index.html，無外部套件、無外部
 
 計時使用 setInterval，瀏覽器在背景分頁降低執行頻率時，倒數可能略有誤差；資料只存在該瀏覽器，換裝置或清除瀏覽資料後會消失。
 
+<img width="1354" height="1300" alt="image" src="https://github.com/user-attachments/assets/cfd426b8-4c83-4deb-937d-2ad454714eb7" />
+
+
